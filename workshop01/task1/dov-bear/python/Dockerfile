@@ -23,5 +23,9 @@ ENV INSTANCE_HASH=""
 # Expose ports
 EXPOSE ${PORT}
 
+# Define healthcheck
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost:${PORT}/ || exit 1
+
 # Run the application
 ENTRYPOINT ["/app/run.sh"]
