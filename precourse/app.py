@@ -18,3 +18,6 @@ def index():
     'github': "https://github.com/mirashah/bug-free-eureka"
   }
   return render_template('index.html', data=data)
+
+if __name__ == '__main__':
+    app.run(host="127.0.0.1", port=5000)
