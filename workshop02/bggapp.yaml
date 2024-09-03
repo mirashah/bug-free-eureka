@@ -1,0 +1,99 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bggapp-configmap
+  namespace: bggns
+  labels:
+    app: bgg
+data:
+  BGG_DB_USER: root
+  BGG_DB_HOST: bggdb-service.bggns.svc.cluster.local
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bggapp-secret
+  namespace: bggns
+  labels:
+    app: bgg
+data:
+  BGG_DB_PASSWORD: Y2hhbmdlaXQ=
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bggapp-deploy
+  namespace: bggns
+  labels:
+    app: bgg
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bggapp
+  template:
+    metadata:
+      name: bggapp
+      namespace: bggns
+      labels:
+        app: bggapp
+    spec:
+      containers:
+      - name: bggapp
+        image: stackupiss/bgg-backend:v1
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: bggapp-configmap
+        - secretRef:
+            name: bggapp-secret
+        # env:
+        # - name: BGG_DB_USER
+        #   valueFrom:
+        #     configMapKeyRef:
+        #       name: bggapp-configmap
+        #       key: BGG_DB_USER
+        # - name: BGG_DB_HOST
+        #   valueFrom:
+        #     configMapKeyRef:
+        #       name: bggapp-configmap
+        #       key: BGG_DB_HOST
+        # - name: BGG_DB_PASSWORD
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: bggapp-secret
+        #       key: BGG_DB_PASSWORD
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: bggapp-port
+          timeoutSeconds: 5
+          failureThreshold: 1
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: bggapp-port
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        ports:
+        - containerPort: 3000
+          name: bggapp-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bggapp-service
+  namespace: bggns
+  labels:
+    app: bgg
+spec:
+  type: ClusterIP
+  # type: NodePort
+  # type: LoadBalancer
+  selector:
+    app: bggapp
+  ports:
+  - port: 8080
+    targetPort: bggapp-port
