@@ -1,0 +1,89 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: code-cm
+  namespace: code
+  labels:
+    app: code
+data:
+  TZ: Asia/Singapore
+  DEFAULT_WORKSPACE: /config/workspace
+  PROXY_DOMAIN: code-167.172.7.185.nip.io
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: code-secret
+  namespace: code
+  labels:
+    app: code
+data:
+  PASSWORD: bGV0bWVpbg== # letmein
+  SUDO_PASSWORD: bGV0bWVpbg== # letmein
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-deploy
+  namespace: code
+  labels:
+    app: code
+    name: code-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code
+      instance: instanceA
+  template:
+    metadata:
+      name: code-server
+      namespace: code
+      labels:
+        app: code
+        instance: instanceA
+    spec:
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: code-pvc
+      containers:
+      - name: code-server
+        image: linuxserver/code-server:amd64-latest
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: code-cm
+        - secretRef:
+            name: code-secret
+        ports:
+        - containerPort: 8443
+          name: container-port
+        volumeMounts:
+          - mountPath: /config/workspace
+            name: data-volume
+        resources:
+          requests:
+            cpu: 200m
+            memory: 1Gi
+          limits:
+            cpu: 200m
+            memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-service
+  namespace: code
+  labels:
+    app: code
+spec:
+  type: ClusterIP
+  selector:
+    app: code
+    instance: instanceA
+  ports:
+  - port: 8443
+    targetPort: container-port
+    name: service-port

@@ -1,0 +1,66 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-deploy-instance-b
+  namespace: code
+  labels:
+    app: code
+    name: code-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code
+      instance: instanceB
+  template:
+    metadata:
+      name: code-server
+      namespace: code
+      labels:
+        app: code
+        instance: instanceB
+    spec:
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: code-pvc-instance-b
+      containers:
+      - name: code-server
+        image: linuxserver/code-server:amd64-latest
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: code-cm
+        - secretRef:
+            name: code-secret
+        ports:
+        - containerPort: 8443
+          name: container-port
+        volumeMounts:
+          - mountPath: /config/workspace
+            name: data-volume
+        resources:
+          requests:
+            cpu: 200m
+            memory: 1Gi
+          limits:
+            cpu: 200m
+            memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-service-b
+  namespace: code
+  labels:
+    app: code
+spec:
+  type: ClusterIP
+  selector:
+    app: code
+    instance: instanceB
+  ports:
+  - port: 8443
+    targetPort: container-port
+    name: service-port

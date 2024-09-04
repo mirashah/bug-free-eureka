@@ -1,0 +1,32 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: code-ing
+  namespace: code
+  labels:
+    app: code
+    name: code-ing
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: code-167.172.7.185.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: code-service
+            port: 
+              name: service-port
+  # - host: code2-167.172.7.185.nip.io
+  #   http:
+  #     paths:
+  #     - path: /
+  #       pathType: Prefix
+  #       backend:
+  #         service:
+  #           name: code-service-b
+  #           port: 
+  #             name: service-port
